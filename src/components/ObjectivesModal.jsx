@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Edit2, Check, GripVertical } from 'lucide-react'
+import { X, Plus, Trash2, Edit2, Check, GripVertical, Star } from 'lucide-react'
 import { HexColorPicker, HexColorInput } from 'react-colorful'
 import useStore from '../store/useStore'
 
@@ -319,19 +319,51 @@ function EmojiPicker({ value, onChange }) {
 
 // ── Objective row ─────────────────────────────────────────────────────────────
 
-function ObjectiveRow({ obj, onEdit, onDelete }) {
+function ObjectiveRow({ obj, onEdit, onDelete, onTogglePriority }) {
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
-      className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 group"
+      className={`flex items-center gap-3 p-3 rounded-xl border group transition-all ${
+        obj.priority
+          ? 'bg-amber-500/8 border-amber-500/30'
+          : 'bg-white/5 border-white/10'
+      }`}
     >
       <GripVertical size={15} className="text-slate-600 shrink-0" />
       <span className="text-lg shrink-0">{obj.emoji}</span>
       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: obj.color }} />
       <span className="flex-1 text-sm font-medium text-slate-200 truncate">{obj.title}</span>
+
+      {/* Category badge */}
+      {obj.category && (() => {
+        const cat = CATEGORIES.find((c) => c.id === obj.category)
+        return cat ? (
+          <span className="text-[10px] text-slate-500 shrink-0">{cat.icon}</span>
+        ) : null
+      })()}
+
+      {/* Priority badge */}
+      {obj.priority && (
+        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded-md shrink-0">
+          ×2
+        </span>
+      )}
+
+      {/* Star toggle */}
+      <motion.button
+        onClick={() => onTogglePriority(obj.id)}
+        whileHover={{ scale: 1.2 }}
+        whileTap={{ scale: 0.85 }}
+        className="p-1 rounded-lg transition-colors shrink-0"
+        title={obj.priority ? 'Retirer la priorité' : 'Marquer comme essentiel (compte double)'}
+        style={{ color: obj.priority ? '#fbbf24' : '#475569' }}
+      >
+        <Star size={14} fill={obj.priority ? 'currentColor' : 'none'} />
+      </motion.button>
+
       <button onClick={() => onEdit(obj)}
         className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white">
         <Edit2 size={13} />
@@ -346,15 +378,26 @@ function ObjectiveRow({ obj, onEdit, onDelete }) {
 
 // ── Objective form ────────────────────────────────────────────────────────────
 
+const CATEGORIES = [
+  { id: 'santé',         label: 'Santé',         icon: '💚' },
+  { id: 'travail',       label: 'Travail',        icon: '💼' },
+  { id: 'apprentissage', label: 'Apprentissage',  icon: '📖' },
+  { id: 'loisir',        label: 'Loisir',         icon: '🎮' },
+  { id: 'personnel',     label: 'Personnel',      icon: '🌟' },
+]
+
+export { CATEGORIES }
+
 function ObjectiveForm({ initial, onSave, onCancel }) {
-  const [title, setTitle] = useState(initial?.title || '')
-  const [color, setColor] = useState(initial?.color || '#6366f1')
-  const [emoji, setEmoji] = useState(initial?.emoji || '🎯')
+  const [title,    setTitle]    = useState(initial?.title    || '')
+  const [color,    setColor]    = useState(initial?.color    || '#6366f1')
+  const [emoji,    setEmoji]    = useState(initial?.emoji    || '🎯')
+  const [category, setCategory] = useState(initial?.category || 'personnel')
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!title.trim()) return
-    onSave({ title: title.trim(), color, emoji })
+    onSave({ title: title.trim(), color, emoji, category })
   }
 
   return (
@@ -369,6 +412,29 @@ function ObjectiveForm({ initial, onSave, onCancel }) {
           className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition-colors"
           autoFocus
         />
+      </div>
+
+      {/* Category */}
+      <div>
+        <p className="text-xs text-slate-500 mb-2">Catégorie</p>
+        <div className="flex flex-wrap gap-2">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setCategory(cat.id)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border"
+              style={{
+                backgroundColor: category === cat.id ? `${color}22` : 'rgba(255,255,255,0.05)',
+                borderColor    : category === cat.id ? color : 'rgba(255,255,255,0.1)',
+                color          : category === cat.id ? color : '#94a3b8',
+              }}
+            >
+              <span>{cat.icon}</span>
+              {cat.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div>
@@ -425,6 +491,7 @@ export default function ObjectivesModal({ onClose }) {
   const [mode, setMode]           = useState('list')
   const [editTarget, setEditTarget] = useState(null)
 
+  const { togglePriority } = useStore()
   const handleAdd  = (data) => { addObjective({ id: `obj-${Date.now()}`, ...data }); setMode('list') }
   const handleEdit = (data) => { updateObjective(editTarget.id, data); setMode('list'); setEditTarget(null) }
   const startEdit  = (obj)  => { setEditTarget(obj); setMode('edit') }
@@ -466,7 +533,7 @@ export default function ObjectivesModal({ onClose }) {
                 <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
                   <AnimatePresence>
                     {objectives.map((obj) => (
-                      <ObjectiveRow key={obj.id} obj={obj} onEdit={startEdit} onDelete={(id) => deleteObjective(id)} />
+                      <ObjectiveRow key={obj.id} obj={obj} onEdit={startEdit} onDelete={(id) => deleteObjective(id)} onTogglePriority={togglePriority} />
                     ))}
                   </AnimatePresence>
                   {objectives.length === 0 && (

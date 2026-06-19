@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Header from './components/Header'
 import YearView from './components/YearView'
@@ -6,6 +6,7 @@ import MonthView from './components/MonthView'
 import DayView from './components/DayView'
 import ProgressChart from './components/ProgressChart'
 import StatsView from './components/StatsView'
+import useStore from './store/useStore'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -16,6 +17,8 @@ const pageVariants = {
 }
 
 export default function App() {
+  const theme = useStore((s) => s.theme)
+
   const [view, setView]   = useState('year')
   const [year, setYear]   = useState(CURRENT_YEAR)
   const [month, setMonth] = useState(null)
@@ -34,7 +37,7 @@ export default function App() {
   const nextYear = () => setYear((y) => y + 1)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col">
+    <div className={`min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col ${theme === 'light' ? 'light-theme' : ''}`}>
       {/* Ambient background blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />

@@ -10,10 +10,16 @@ const DEFAULT_OBJECTIVES = [
 const useStore = create(
   persist(
     (set, get) => ({
+      theme: 'dark',    // 'dark' | 'light'
       objectives: DEFAULT_OBJECTIVES,
       dayData: {},       // { "YYYY-MM-DD": { [objId]: boolean } }
       dayNotes: {},      // { "YYYY-MM-DD": string }
+      dayMoods: {},      // { "YYYY-MM-DD": emoji string }
       closedMonths: [],  // ["YYYY-MM"]
+
+      // --- Theme ---
+      toggleTheme: () =>
+        set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
 
       // --- Objectives ---
       addObjective: (obj) =>
@@ -45,6 +51,10 @@ const useStore = create(
       setDayNote: (date, note) =>
         set((s) => ({ dayNotes: { ...s.dayNotes, [date]: note } })),
 
+      // --- Day moods ---
+      setDayMood: (date, mood) =>
+        set((s) => ({ dayMoods: { ...s.dayMoods, [date]: mood } })),
+
       // --- Month closing ---
       closeMonth: (ym) =>
         set((s) => ({
@@ -58,13 +68,26 @@ const useStore = create(
           closedMonths: s.closedMonths.filter((m) => m !== ym),
         })),
 
-      // --- Computed ---
+      // Toggle priority on objective
+      togglePriority: (id) =>
+        set((s) => ({
+          objectives: s.objectives.map((o) =>
+            o.id === id ? { ...o, priority: !o.priority } : o
+          ),
+        })),
+
+      // --- Computed (priority = weight×2) ---
       getDayCompletion: (date) => {
         const { objectives, dayData } = get()
         if (!objectives.length) return 0
         const checks = dayData[date] || {}
-        const done = objectives.filter((o) => checks[o.id]).length
-        return Math.round((done / objectives.length) * 100)
+        let totalW = 0, doneW = 0
+        objectives.forEach((o) => {
+          const w = o.priority ? 2 : 1
+          totalW += w
+          if (checks[o.id]) doneW += w
+        })
+        return totalW ? Math.round((doneW / totalW) * 100) : 0
       },
 
       // --- Stats ---
@@ -173,15 +196,15 @@ const useStore = create(
         const { objectives, dayData } = get()
         if (!objectives.length) return 0
         const daysInMonth = new Date(year, month, 0).getDate()
-        let done = 0
-        let total = 0
+        let doneW = 0, totalW = 0
+        const dayTotalW = objectives.reduce((s, o) => s + (o.priority ? 2 : 1), 0)
         for (let d = 1; d <= daysInMonth; d++) {
           const date = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`
           const checks = dayData[date] || {}
-          done += objectives.filter((o) => checks[o.id]).length
-          total += objectives.length
+          objectives.forEach((o) => { if (checks[o.id]) doneW += o.priority ? 2 : 1 })
+          totalW += dayTotalW
         }
-        return total ? Math.round((done / total) * 100) : 0
+        return totalW ? Math.round((doneW / totalW) * 100) : 0
       },
     }),
     { name: 'daily-organizer-v1' }

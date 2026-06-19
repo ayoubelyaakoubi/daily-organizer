@@ -9,7 +9,7 @@ import {
 } from '../utils/dateUtils'
 
 export default function MonthView({ year, month, onSelectDay }) {
-  const { closedMonths, closeMonth, reopenMonth, getDayCompletion, getMonthCompletion } = useStore()
+  const { closedMonths, closeMonth, reopenMonth, getDayCompletion, getMonthCompletion, dayMoods } = useStore()
   const [confirmClose, setConfirmClose] = useState(false)
 
   const ym = toMonthKey(year, month)
@@ -140,6 +140,7 @@ export default function MonthView({ year, month, onSelectDay }) {
           const todayFlag = isToday(year, month, day)
           const pastFlag = isPast(year, month, day)
           const hasData = completion > 0
+          const mood = dayMoods?.[dateKey] || null
 
           const dayColor =
             completion >= 75 ? '#10b981' :
@@ -196,6 +197,18 @@ export default function MonthView({ year, month, onSelectDay }) {
               >
                 {completion}%
               </span>
+
+              {/* Mood emoji */}
+              {mood && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -bottom-1 -right-1 text-[11px] leading-none"
+                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.5)' }}
+                >
+                  {mood}
+                </motion.span>
+              )}
 
               {/* Today dot */}
               {todayFlag && (

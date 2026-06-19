@@ -68,3 +68,87 @@ body {
   width: 20px;
   height: 20px;
 }
+
+/* ── Light theme overrides ─────────────────────────────── */
+.light-theme {
+  background: linear-gradient(135deg, #eef2ff 0%, #f8faff 50%, #f0f4ff 100%) !important;
+  color: #0f172a !important;
+}
+
+/* Scrollbar */
+.light-theme::-webkit-scrollbar-track { background: #e2e8f0; }
+.light-theme::-webkit-scrollbar-thumb { background: #94a3b8; }
+
+/* Page background */
+.light-theme .bg-gradient-to-br { background: linear-gradient(135deg, #eef2ff, #f8faff, #f0f4ff) !important; }
+.light-theme .from-slate-950 { --tw-gradient-from: #eef2ff !important; }
+.light-theme .via-slate-900  { --tw-gradient-via: #f8faff !important; }
+.light-theme .to-slate-950   { --tw-gradient-to: #f0f4ff !important; }
+
+/* Fixed blobs */
+.light-theme .bg-indigo-600\/10 { background-color: rgba(99,102,241,0.06) !important; }
+.light-theme .bg-purple-600\/8  { background-color: rgba(147,51,234,0.04) !important; }
+.light-theme .bg-blue-600\/6    { background-color: rgba(37,99,235,0.03) !important; }
+
+/* Header */
+.light-theme header { background-color: rgba(248,250,252,0.92) !important; border-color: rgba(0,0,0,0.07) !important; }
+
+/* Text */
+.light-theme .text-white   { color: #0f172a !important; }
+.light-theme .text-slate-100 { color: #1e293b !important; }
+.light-theme .text-slate-200 { color: #334155 !important; }
+.light-theme .text-slate-300 { color: #475569 !important; }
+.light-theme .text-slate-400 { color: #64748b !important; }
+.light-theme .text-slate-500 { color: #94a3b8 !important; }
+.light-theme .text-slate-600 { color: #94a3b8 !important; }
+.light-theme .placeholder-slate-500::placeholder { color: #cbd5e1 !important; }
+.light-theme .placeholder-slate-600::placeholder { color: #cbd5e1 !important; }
+
+/* Cards / panels */
+.light-theme .bg-slate-900 { background-color: #ffffff !important; }
+.light-theme .bg-slate-950 { background-color: #f8fafc !important; }
+.light-theme .bg-slate-950\/80 { background-color: rgba(248,250,252,0.92) !important; }
+
+/* Transparent white backgrounds → subtle light */
+.light-theme .bg-white\/3  { background-color: rgba(0,0,0,0.025) !important; }
+.light-theme .bg-white\/4  { background-color: rgba(0,0,0,0.03)  !important; }
+.light-theme .bg-white\/5  { background-color: rgba(0,0,0,0.04)  !important; }
+.light-theme .bg-white\/6  { background-color: rgba(0,0,0,0.05)  !important; }
+.light-theme .bg-white\/7  { background-color: rgba(0,0,0,0.055) !important; }
+.light-theme .bg-white\/8  { background-color: rgba(0,0,0,0.06)  !important; }
+.light-theme .bg-white\/10 { background-color: rgba(0,0,0,0.07)  !important; }
+
+/* Borders */
+.light-theme .border-white\/5  { border-color: rgba(0,0,0,0.06) !important; }
+.light-theme .border-white\/8  { border-color: rgba(0,0,0,0.08) !important; }
+.light-theme .border-white\/10 { border-color: rgba(0,0,0,0.09) !important; }
+.light-theme .border-white\/20 { border-color: rgba(0,0,0,0.12) !important; }
+.light-theme .border-white\/25 { border-color: rgba(0,0,0,0.15) !important; }
+
+/* Inputs */
+.light-theme input,
+.light-theme textarea {
+  background-color: rgba(0,0,0,0.03) !important;
+  border-color: rgba(0,0,0,0.1) !important;
+  color: #0f172a !important;
+}
+.light-theme input::placeholder,
+.light-theme textarea::placeholder { color: #94a3b8 !important; }
+
+/* Modal */
+.light-theme .bg-black\/60 { background-color: rgba(15,23,42,0.4) !important; }
+
+/* Slate bg for year month cards */
+.light-theme .bg-slate-800\/50,
+.light-theme .bg-slate-800\/80 {
+  background-color: rgba(255,255,255,0.85) !important;
+  backdrop-filter: blur(8px);
+}
+.light-theme .bg-slate-700\/40 { background-color: rgba(0,0,0,0.04) !important; }
+.light-theme .bg-slate-700\/80 { background-color: rgba(255,255,255,0.9) !important; }
+.light-theme .bg-slate-700     { background-color: #e2e8f0 !important; }
+.light-theme .bg-slate-800     { background-color: #f1f5f9 !important; }
+
+/* Hover tweaks */
+.light-theme .hover\:bg-white\/10:hover { background-color: rgba(0,0,0,0.06) !important; }
+.light-theme .hover\:bg-white\/5:hover  { background-color: rgba(0,0,0,0.04) !important; }

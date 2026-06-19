@@ -1,9 +1,79 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Target, ChevronLeft, Calendar, Flame, BarChart2 } from 'lucide-react'
+import { Target, ChevronLeft, Calendar, Flame, BarChart2, Sun, Moon, Download } from 'lucide-react'
 import ObjectivesModal from './ObjectivesModal'
 import useStore from '../store/useStore'
 import { MONTHS_FR } from '../utils/dateUtils'
+
+function InstallButton() {
+  const [prompt, setPrompt] = useState(null)
+  const [installed, setInstalled] = useState(false)
+
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setPrompt(e) }
+    const doneHandler = () => { setInstalled(true); setPrompt(null) }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', doneHandler)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+      window.removeEventListener('appinstalled', doneHandler)
+    }
+  }, [])
+
+  if (installed || !prompt) return null
+
+  return (
+    <motion.button
+      onClick={async () => {
+        prompt.prompt()
+        const { outcome } = await prompt.userChoice
+        if (outcome === 'accepted') setPrompt(null)
+      }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20"
+      title="Installer l'application"
+    >
+      <Download size={14} />
+      <span className="hidden sm:inline">Installer</span>
+    </motion.button>
+  )
+}
+
+function ThemeToggle() {
+  const theme       = useStore((s) => s.theme)
+  const toggleTheme = useStore((s) => s.toggleTheme)
+  const isDark = theme === 'dark'
+
+  return (
+    <motion.button
+      onClick={toggleTheme}
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.92 }}
+      className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all"
+      style={{
+        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+        borderColor    : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
+        color          : isDark ? '#fbbf24' : '#6366f1',
+      }}
+      title={isDark ? 'Passer en mode clair' : 'Passer en mode sombre'}
+    >
+      <AnimatePresence mode="wait">
+        {isDark ? (
+          <motion.div key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.2 }}>
+            <Sun size={16} />
+          </motion.div>
+        ) : (
+          <motion.div key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.2 }}>
+            <Moon size={16} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  )
+}
 
 function StreakBadge() {
   const getStreak = useStore((s) => s.getStreak)
@@ -114,8 +184,10 @@ export default function Header({ view, selectedMonth, selectedYear, selectedDay,
             <StreakBadge />
           </div>
 
-          {/* RIGHT: stats + define objectives */}
+          {/* RIGHT: install + theme + stats + define objectives */}
           <div className="flex justify-end items-center gap-2">
+            <InstallButton />
+            <ThemeToggle />
             {view === 'year' && onStats && (
               <motion.button
                 onClick={onStats}
