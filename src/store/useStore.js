@@ -26,6 +26,18 @@ const useStore = create(
       setReminder: (updates) =>
         set((s) => ({ reminder: { ...s.reminder, ...updates } })),
 
+      // --- Firebase sync ---
+      setStoreFromFirebase: (data) =>
+        set(() => ({
+          objectives: data.objectives || get().objectives,
+          dayData: data.dayData || get().dayData,
+          dayNotes: data.dayNotes || get().dayNotes,
+          dayMoods: data.dayMoods || get().dayMoods,
+          closedMonths: data.closedMonths || get().closedMonths,
+          theme: data.theme || get().theme,
+          reminder: data.reminder || get().reminder,
+        })),
+
       // --- Objectives ---
       addObjective: (obj) =>
         set((s) => ({ objectives: [...s.objectives, obj] })),

@@ -8,6 +8,7 @@ import ProgressChart from './components/ProgressChart'
 import StatsView from './components/StatsView'
 import useStore from './store/useStore'
 import { useReminder } from './utils/useReminder'
+import { useFirebaseSync } from './utils/useFirebaseSync'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -20,6 +21,7 @@ const pageVariants = {
 export default function App() {
   const theme = useStore((s) => s.theme)
   useReminder()
+  useFirebaseSync()
 
   const [view, setView]   = useState('year')
   const [year, setYear]   = useState(CURRENT_YEAR)
