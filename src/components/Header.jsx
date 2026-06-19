@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Target, ChevronLeft, Calendar, Flame, BarChart2, Sun, Moon, Bell, BellRing, BellOff } from 'lucide-react'
+import { Target, ChevronLeft, Calendar, Flame, BarChart2, Sun, Moon, Bell, BellRing, BellOff, Download } from 'lucide-react'
 import ObjectivesModal from './ObjectivesModal'
 import ReminderModal from './ReminderModal'
 import useStore from '../store/useStore'
