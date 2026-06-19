@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Target, ChevronLeft, Calendar, Flame, BarChart2, Sun, Moon, Download } from 'lucide-react'
+import { Target, ChevronLeft, Calendar, Flame, BarChart2, Sun, Moon, Bell, BellRing, BellOff } from 'lucide-react'
 import ObjectivesModal from './ObjectivesModal'
+import ReminderModal from './ReminderModal'
 import useStore from '../store/useStore'
 import { MONTHS_FR } from '../utils/dateUtils'
 
@@ -130,7 +131,9 @@ function StreakBadge() {
 }
 
 export default function Header({ view, selectedMonth, selectedYear, selectedDay, onBack, onStats }) {
-  const [showModal, setShowModal] = useState(false)
+  const [showModal,    setShowModal]    = useState(false)
+  const [showReminder, setShowReminder] = useState(false)
+  const reminderEnabled = useStore((s) => s.reminder.enabled)
 
   const getTitle = () => {
     if (view === 'year') return `${selectedYear}`
@@ -187,6 +190,30 @@ export default function Header({ view, selectedMonth, selectedYear, selectedDay,
           {/* RIGHT: install + theme + stats + define objectives */}
           <div className="flex justify-end items-center gap-2">
             <InstallButton />
+            {/* Reminder bell */}
+            <motion.button
+              onClick={() => setShowReminder(true)}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+              className="w-9 h-9 rounded-xl border flex items-center justify-center transition-all"
+              style={{
+                backgroundColor: reminderEnabled ? 'rgba(99,102,241,0.15)' : 'rgba(255,255,255,0.06)',
+                borderColor    : reminderEnabled ? 'rgba(99,102,241,0.4)'  : 'rgba(255,255,255,0.12)',
+                color          : reminderEnabled ? '#818cf8' : '#64748b',
+              }}
+              title={reminderEnabled ? 'Rappel actif' : 'Configurer un rappel'}
+            >
+              {reminderEnabled ? (
+                <motion.div
+                  animate={{ rotate: [0, -15, 15, -10, 10, 0] }}
+                  transition={{ duration: 0.6, repeat: Infinity, repeatDelay: 3 }}
+                >
+                  <BellRing size={15} fill="currentColor" />
+                </motion.div>
+              ) : (
+                <Bell size={15} />
+              )}
+            </motion.button>
             <ThemeToggle />
             {view === 'year' && onStats && (
               <motion.button
@@ -212,7 +239,8 @@ export default function Header({ view, selectedMonth, selectedYear, selectedDay,
       </header>
 
       <AnimatePresence>
-        {showModal && <ObjectivesModal onClose={() => setShowModal(false)} />}
+        {showModal    && <ObjectivesModal onClose={() => setShowModal(false)} />}
+        {showReminder && <ReminderModal  onClose={() => setShowReminder(false)} />}
       </AnimatePresence>
     </>
   )

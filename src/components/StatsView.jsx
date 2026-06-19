@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Trophy, Calendar, Star, CheckCircle, TrendingUp } from 'lucide-react'
+import { Trophy, Calendar, Star, CheckCircle, TrendingUp, FileSpreadsheet, FileJson, FileText, Check } from 'lucide-react'
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, Tooltip as ReTooltip,
 } from 'recharts'
+import * as XLSX from 'xlsx'
 import useStore from '../store/useStore'
 import { MONTHS_FR } from '../utils/dateUtils'
 import Heatmap from './Heatmap'
@@ -87,9 +89,94 @@ function ObjBar({ obj, delay }) {
   )
 }
 
+function exportToExcel(year, stats, getMonthCompletion) {
+  const wb = XLSX.utils.book_new()
+  const DAYS_FR = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+
+  // Sheet 1: Progression mensuelle (line chart data)
+  const monthlyData = MONTHS_FR.map((name, i) => ({
+    'Mois'           : name,
+    'Numéro de mois' : i + 1,
+    'Complétion (%)'  : getMonthCompletion(year, i + 1),
+  }))
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(monthlyData), 'Progression mensuelle')
+
+  // Sheet 2: Jours de la semaine (bar chart data)
+  const weeklyData = DAYS_FR.map((day, i) => ({
+    'Jour'           : day,
+    'Complétion (%)' : stats.dowAvg[i],
+  }))
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(weeklyData), 'Jours de la semaine')
+
+  // Sheet 3: Classement objectifs (radar chart data)
+  const objData = stats.objStats.map((o) => ({
+    'Emoji'          : o.emoji,
+    'Objectif'       : o.title,
+    'Catégorie'      : o.category || 'personnel',
+    'Complétion (%)' : o.pct,
+    'Prioritaire'    : o.priority ? 'Oui' : 'Non',
+  }))
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(objData), 'Objectifs')
+
+  // Sheet 4: Résumé
+  const summary = [
+    { 'Indicateur': 'Meilleur mois',       'Valeur': MONTHS_FR[(stats.bestMonth.month || 1) - 1], 'Score': `${stats.bestMonth.pct}%` },
+    { 'Indicateur': 'Meilleur jour semaine','Valeur': stats.bestDow.label,                          'Score': `${stats.bestDow.pct}%`  },
+    { 'Indicateur': 'Journées parfaites',  'Valeur': `${stats.totalDays100} jour(s)`,              'Score': ''                         },
+    { 'Indicateur': 'Meilleur objectif',   'Valeur': stats.bestObj?.title || '—',                  'Score': `${stats.bestObj?.pct}%`  },
+    { 'Indicateur': 'À améliorer',         'Valeur': stats.worstObj?.title || '—',                 'Score': `${stats.worstObj?.pct}%` },
+  ]
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), `Résumé ${year}`)
+
+  XLSX.writeFile(wb, `daily-organizer-graphiques-${year}.xlsx`)
+}
+
 export default function StatsView({ year }) {
-  const getStats = useStore((s) => s.getStats)
+  const getStats           = useStore((s) => s.getStats)
+  const getMonthCompletion = useStore((s) => s.getMonthCompletion)
+  const { objectives, dayData, dayNotes, dayMoods, closedMonths } = useStore()
+  const [exported, setExported] = useState(null)
   const stats = getStats(year)
+
+  const flash = (type) => { setExported(type); setTimeout(() => setExported(null), 2000) }
+
+  const handleExcel = () => { exportToExcel(year, stats, getMonthCompletion); flash('excel') }
+
+  const handleJSON = () => {
+    const data = { exportedAt: new Date().toISOString(), objectives, closedMonths,
+      days: Object.entries(dayData).map(([date, checks]) => ({
+        date, checks,
+        note: dayNotes[date] || '', mood: dayMoods[date] || '',
+        completion: (() => {
+          if (!objectives.length) return 0
+          let tw = 0, dw = 0
+          objectives.forEach((o) => { const w = o.priority ? 2 : 1; tw += w; if (checks[o.id]) dw += w })
+          return tw ? Math.round((dw / tw) * 100) : 0
+        })(),
+      })),
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    Object.assign(document.createElement('a'), { href: url, download: `daily-organizer-${new Date().toISOString().slice(0,10)}.json` }).click()
+    URL.revokeObjectURL(url)
+    flash('json')
+  }
+
+  const handleCSV = () => {
+    const rows = [['Date', 'Complétion (%)', 'Humeur', 'Note', ...objectives.map((o) => o.title)]]
+    Object.keys(dayData).sort().forEach((date) => {
+      const checks = dayData[date] || {}
+      let tw = 0, dw = 0
+      objectives.forEach((o) => { const w = o.priority ? 2 : 1; tw += w; if (checks[o.id]) dw += w })
+      rows.push([date, tw ? Math.round((dw/tw)*100) : 0, dayMoods[date]||'', (dayNotes[date]||'').replace(/"/g,'""'), ...objectives.map((o) => checks[o.id] ? 'Oui' : 'Non')])
+    })
+    const csv = '﻿' + rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    Object.assign(document.createElement('a'), { href: url, download: `daily-organizer-${new Date().toISOString().slice(0,10)}.csv` }).click()
+    URL.revokeObjectURL(url)
+    flash('csv')
+  }
 
   if (!stats) {
     return (
@@ -106,8 +193,33 @@ export default function StatsView({ year }) {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <h2 className="text-2xl font-extrabold text-white">Statistiques {year}</h2>
-        <p className="text-slate-400 text-sm mt-1">Analyse de ta progression annuelle</p>
+        <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
+          <div>
+            <h2 className="text-2xl font-extrabold text-white">Statistiques {year}</h2>
+            <p className="text-slate-400 text-sm mt-1">Analyse de ta progression annuelle</p>
+          </div>
+        </div>
+
+        {/* Export buttons */}
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: 'excel', label: 'Excel (graphiques)', icon: FileSpreadsheet, color: '#34d399', bg: 'rgba(16,185,129,0.1)',  border: 'rgba(16,185,129,0.25)', fn: handleExcel },
+            { key: 'json',  label: 'JSON (sauvegarde)',  icon: FileJson,        color: '#818cf8', bg: 'rgba(99,102,241,0.1)',  border: 'rgba(99,102,241,0.25)', fn: handleJSON  },
+            { key: 'csv',   label: 'CSV (tableur)',      icon: FileText,        color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.25)', fn: handleCSV   },
+          ].map(({ key, label, icon: Icon, color, bg, border, fn }) => (
+            <motion.button
+              key={key}
+              onClick={fn}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border"
+              style={{ backgroundColor: bg, borderColor: border, color }}
+            >
+              {exported === key ? <Check size={14} /> : <Icon size={14} />}
+              {exported === key ? 'Téléchargé !' : label}
+            </motion.button>
+          ))}
+        </div>
       </motion.div>
 
       {/* KPI cards */}

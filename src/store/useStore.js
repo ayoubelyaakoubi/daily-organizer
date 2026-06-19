@@ -11,6 +11,7 @@ const useStore = create(
   persist(
     (set, get) => ({
       theme: 'dark',    // 'dark' | 'light'
+      reminder: { enabled: false, time: '20:00', lastSent: null },
       objectives: DEFAULT_OBJECTIVES,
       dayData: {},       // { "YYYY-MM-DD": { [objId]: boolean } }
       dayNotes: {},      // { "YYYY-MM-DD": string }
@@ -20,6 +21,10 @@ const useStore = create(
       // --- Theme ---
       toggleTheme: () =>
         set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+
+      // --- Reminder ---
+      setReminder: (updates) =>
+        set((s) => ({ reminder: { ...s.reminder, ...updates } })),
 
       // --- Objectives ---
       addObjective: (obj) =>
