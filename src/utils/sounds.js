@@ -31,7 +31,9 @@ export function playCheckSound() {
       { freq: 523, start: 0,    duration: 0.12, volume: 0.12 },
       { freq: 784, start: 0.08, duration: 0.18, volume: 0.10 },
     ])
-  } catch (_) {}
+  } catch {
+    // AudioContext indisponible (autoplay bloqué) — silencieux
+  }
 }
 
 // Victory chord when day reaches 100%
@@ -43,5 +45,7 @@ export function playCompletionSound() {
       { freq: 784, start: 0.10, duration: 0.30, volume: 0.13, type: 'sine' },
       { freq: 1047,start: 0.18, duration: 0.45, volume: 0.14, type: 'sine' },
     ])
-  } catch (_) {}
+  } catch {
+    // AudioContext indisponible (autoplay bloqué) — silencieux
+  }
 }

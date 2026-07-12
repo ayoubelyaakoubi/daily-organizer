@@ -1,14 +1,39 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Trophy, Calendar, Star, CheckCircle, TrendingUp, FileSpreadsheet, FileJson, FileText, Check } from 'lucide-react'
+import { Trophy, Calendar, Star, CheckCircle, TrendingUp, FileSpreadsheet, FileJson, FileText, Check, Crown } from 'lucide-react'
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, Tooltip as ReTooltip,
 } from 'recharts'
 import * as XLSX from 'xlsx'
 import useStore from '../store/useStore'
+import { useAuth } from '../context/AuthContext'
 import { MONTHS_FR } from '../utils/dateUtils'
 import Heatmap from './Heatmap'
+
+// Floute le contenu et affiche un déblocage Premium pour le plan gratuit
+function PremiumGate({ locked, onUnlock, children }) {
+  if (!locked) return children
+  return (
+    <div className="relative">
+      <div className="pointer-events-none select-none blur-[7px] opacity-40">{children}</div>
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}>
+          <Crown size={20} className="text-white" fill="currentColor" />
+        </div>
+        <p className="text-sm font-semibold text-white">Statistique avancée</p>
+        <button
+          onClick={onUnlock}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white transition-all hover:shadow-lg hover:shadow-amber-500/25"
+          style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+        >
+          Débloquer avec Premium
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function StatCard({ icon: Icon, label, value, sub, color = '#6366f1', delay = 0 }) {
   return (
@@ -131,14 +156,16 @@ function exportToExcel(year, stats, getMonthCompletion) {
   XLSX.writeFile(wb, `daily-organizer-graphiques-${year}.xlsx`)
 }
 
-export default function StatsView({ year }) {
+export default function StatsView({ year, onUpgrade }) {
   const getStats           = useStore((s) => s.getStats)
   const getMonthCompletion = useStore((s) => s.getMonthCompletion)
   const { objectives, dayData, dayNotes, dayMoods, closedMonths } = useStore()
+  const { isPremium } = useAuth()
   const [exported, setExported] = useState(null)
   const stats = getStats(year)
 
   const flash = (type) => { setExported(type); setTimeout(() => setExported(null), 2000) }
+  const requireUpgrade = () => onUpgrade?.('Les exports et statistiques avancées sont réservés aux membres Premium')
 
   const handleExcel = () => { exportToExcel(year, stats, getMonthCompletion); flash('excel') }
 
@@ -209,14 +236,15 @@ export default function StatsView({ year }) {
           ].map(({ key, label, icon: Icon, color, bg, border, fn }) => (
             <motion.button
               key={key}
-              onClick={fn}
+              onClick={isPremium ? fn : requireUpgrade}
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border"
-              style={{ backgroundColor: bg, borderColor: border, color }}
+              style={{ backgroundColor: bg, borderColor: border, color, opacity: isPremium ? 1 : 0.75 }}
             >
               {exported === key ? <Check size={14} /> : <Icon size={14} />}
               {exported === key ? 'Téléchargé !' : label}
+              {!isPremium && <Crown size={11} className="text-amber-400" fill="currentColor" />}
             </motion.button>
           ))}
         </div>
@@ -299,6 +327,7 @@ export default function StatsView({ year }) {
           <p className="text-sm font-semibold text-slate-300 mb-1">🕸️ Profil de performance</p>
           <p className="text-xs text-slate-500 mb-4">Vue globale de ton équilibre par objectif</p>
 
+          <PremiumGate locked={!isPremium} onUnlock={requireUpgrade}>
           <ResponsiveContainer width="100%" height={260}>
             <RadarChart data={objStats.map((o) => ({ subject: `${o.emoji} ${o.title}`, value: o.pct, color: o.color }))}>
               <PolarGrid stroke="rgba(255,255,255,0.06)" />
@@ -339,6 +368,7 @@ export default function StatsView({ year }) {
               </div>
             ))}
           </div>
+          </PremiumGate>
         </motion.div>
       )}
 
@@ -351,7 +381,9 @@ export default function StatsView({ year }) {
         style={{ background: 'linear-gradient(135deg, rgba(30,41,59,0.8) 0%, rgba(15,23,42,0.9) 100%)' }}
       >
         <p className="text-sm font-semibold text-slate-300 mb-4">🗓️ Heatmap {year} — activité quotidienne</p>
-        <Heatmap year={year} />
+        <PremiumGate locked={!isPremium} onUnlock={requireUpgrade}>
+          <Heatmap year={year} />
+        </PremiumGate>
       </motion.div>
 
       {/* Best / Worst highlight */}

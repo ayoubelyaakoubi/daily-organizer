@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Target, ChevronLeft, Calendar, Flame, BarChart2, Sun, Moon, Bell, BellRing, BellOff, Download } from 'lucide-react'
+import { Target, ChevronLeft, Calendar, Flame, BarChart2, Sun, Moon, Bell, BellRing, Download, Users } from 'lucide-react'
 import ObjectivesModal from './ObjectivesModal'
 import ReminderModal from './ReminderModal'
+import AccountMenu from './AccountMenu'
 import useStore from '../store/useStore'
 import { MONTHS_FR } from '../utils/dateUtils'
 
@@ -130,7 +131,7 @@ function StreakBadge() {
   )
 }
 
-export default function Header({ view, selectedMonth, selectedYear, selectedDay, onBack, onStats }) {
+export default function Header({ view, selectedMonth, selectedYear, selectedDay, onBack, onStats, onUpgrade, onFriends }) {
   const [showModal,    setShowModal]    = useState(false)
   const [showReminder, setShowReminder] = useState(false)
   const reminderEnabled = useStore((s) => s.reminder.enabled)
@@ -187,9 +188,21 @@ export default function Header({ view, selectedMonth, selectedYear, selectedDay,
             <StreakBadge />
           </div>
 
-          {/* RIGHT: install + theme + stats + define objectives */}
+          {/* RIGHT: install + friends + theme + stats + define objectives + account */}
           <div className="flex justify-end items-center gap-2">
             <InstallButton />
+            {/* Friends / leaderboard */}
+            {onFriends && (
+              <motion.button
+                onClick={onFriends}
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                className="w-9 h-9 rounded-xl border border-white/12 bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all"
+                title="Amis & classement"
+              >
+                <Users size={15} />
+              </motion.button>
+            )}
             {/* Reminder bell */}
             <motion.button
               onClick={() => setShowReminder(true)}
@@ -234,12 +247,13 @@ export default function Header({ view, selectedMonth, selectedYear, selectedDay,
               <span className="hidden sm:inline">Définir mes objectifs</span>
               <span className="sm:hidden">Objectifs</span>
             </button>
+            <AccountMenu onUpgrade={onUpgrade} />
           </div>
         </div>
       </header>
 
       <AnimatePresence>
-        {showModal    && <ObjectivesModal onClose={() => setShowModal(false)} />}
+        {showModal    && <ObjectivesModal onClose={() => setShowModal(false)} onUpgrade={onUpgrade} />}
         {showReminder && <ReminderModal  onClose={() => setShowReminder(false)} />}
       </AnimatePresence>
     </>

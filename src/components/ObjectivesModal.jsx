@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import ReactDOM from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Plus, Trash2, Edit2, Check, GripVertical, Star } from 'lucide-react'
+import { X, Plus, Trash2, Edit2, Check, GripVertical, Star, Crown } from 'lucide-react'
 import { HexColorPicker, HexColorInput } from 'react-colorful'
 import useStore from '../store/useStore'
+import { useAuth } from '../context/AuthContext'
+import { FREE_MAX_OBJECTIVES } from '../utils/plans'
 
 const PRESET_EMOJIS = [
   '🎯', '📚', '🏃', '💼', '🍎', '💪', '🧘', '✍️',
@@ -486,10 +488,13 @@ function ObjectiveForm({ initial, onSave, onCancel }) {
 
 // ── Main modal ────────────────────────────────────────────────────────────────
 
-export default function ObjectivesModal({ onClose }) {
+export default function ObjectivesModal({ onClose, onUpgrade }) {
   const { objectives, addObjective, updateObjective, deleteObjective } = useStore()
+  const { isPremium } = useAuth()
   const [mode, setMode]           = useState('list')
   const [editTarget, setEditTarget] = useState(null)
+
+  const atFreeLimit = !isPremium && objectives.length >= FREE_MAX_OBJECTIVES
 
   const { togglePriority } = useStore()
   const handleAdd  = (data) => { addObjective({ id: `obj-${Date.now()}`, ...data }); setMode('list') }
@@ -559,13 +564,29 @@ export default function ObjectivesModal({ onClose }) {
           {/* Footer */}
           {mode === 'list' && (
             <div className="p-6 border-t border-white/10 bg-slate-900">
-              <button
-                onClick={() => setMode('add')}
-                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                <Plus size={16} />
-                Ajouter un objectif
-              </button>
+              {atFreeLimit ? (
+                <button
+                  onClick={() => { onClose(); onUpgrade?.(`Le plan gratuit est limité à ${FREE_MAX_OBJECTIVES} objectifs — passe à Premium pour en créer autant que tu veux`) }}
+                  className="w-full py-2.5 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-amber-500/25"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)' }}
+                >
+                  <Crown size={15} fill="currentColor" />
+                  Limite gratuite atteinte ({FREE_MAX_OBJECTIVES}) — Passer Premium
+                </button>
+              ) : (
+                <button
+                  onClick={() => setMode('add')}
+                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  <Plus size={16} />
+                  Ajouter un objectif
+                  {!isPremium && (
+                    <span className="text-[10px] text-indigo-200/70 font-normal">
+                      ({objectives.length}/{FREE_MAX_OBJECTIVES})
+                    </span>
+                  )}
+                </button>
+              )}
             </div>
           )}
         </div>

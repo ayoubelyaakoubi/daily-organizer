@@ -12,6 +12,7 @@ const useStore = create(
     (set, get) => ({
       theme: 'dark',    // 'dark' | 'light'
       reminder: { enabled: false, time: '20:00', lastSent: null },
+      social: { sharingEnabled: false, code: null },
       objectives: DEFAULT_OBJECTIVES,
       dayData: {},       // { "YYYY-MM-DD": { [objId]: boolean } }
       dayNotes: {},      // { "YYYY-MM-DD": string }
@@ -26,6 +27,10 @@ const useStore = create(
       setReminder: (updates) =>
         set((s) => ({ reminder: { ...s.reminder, ...updates } })),
 
+      // --- Social (partage & amis) ---
+      setSocial: (updates) =>
+        set((s) => ({ social: { ...s.social, ...updates } })),
+
       // --- Firebase sync ---
       setStoreFromFirebase: (data) =>
         set(() => ({
@@ -36,6 +41,7 @@ const useStore = create(
           closedMonths: data.closedMonths || get().closedMonths,
           theme: data.theme || get().theme,
           reminder: data.reminder || get().reminder,
+          social: data.social || get().social,
         })),
 
       // --- Objectives ---
@@ -121,11 +127,16 @@ const useStore = create(
         let bestMonth = { month: 0, pct: 0 }
         let daysLogged = 0
 
+        // Ne compter que les jours passés (sinon les jours futurs diluent les %)
+        const today = new Date()
+        today.setHours(23, 59, 59, 999)
+
         for (let m = 1; m <= 12; m++) {
           const daysInMonth = new Date(year, m, 0).getDate()
           let mDone = 0, mTotal = 0
 
           for (let d = 1; d <= daysInMonth; d++) {
+            if (new Date(year, m - 1, d) > today) break
             const date = `${year}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
             const checks = dayData[date] || {}
             const dayDone = objectives.filter((o) => checks[o.id]).length
@@ -207,6 +218,19 @@ const useStore = create(
         }
 
         return { count, todayDone }
+      },
+
+      // --- Moyenne des 7 derniers jours (leaderboard) ---
+      getWeekPct: () => {
+        const { getDayCompletion } = get()
+        let sum = 0
+        const d = new Date()
+        for (let i = 0; i < 7; i++) {
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+          sum += getDayCompletion(key)
+          d.setDate(d.getDate() - 1)
+        }
+        return Math.round(sum / 7)
       },
 
       getMonthCompletion: (year, month) => {

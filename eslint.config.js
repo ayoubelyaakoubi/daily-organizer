@@ -29,6 +29,10 @@ export default [
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
       'react/jsx-no-target-blank': 'off',
+      // Projet JS sans PropTypes ni TypeScript
+      'react/prop-types': 'off',
+      // Textes français pleins d'apostrophes et guillemets
+      'react/no-unescaped-entities': 'off',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
